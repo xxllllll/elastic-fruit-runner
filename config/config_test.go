@@ -324,7 +324,7 @@ func TestValidate(t *testing.T) {
 				}()},
 				IdleTimeout: 15 * time.Minute,
 			},
-			wantErr: "must be 'tart' or 'docker'",
+			wantErr: "must be 'tart', 'docker', or 'docker-host'",
 		},
 		{
 			name: "max_runners <= 0",

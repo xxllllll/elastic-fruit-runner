@@ -67,7 +67,7 @@ func run() error {
 
 	apiAddr := cfg.APIAddr
 	if apiAddr == "" {
-		apiAddr = ":8080"
+		apiAddr = config.DefaultAPIAddr
 	}
 	apiServer := api.NewServer(managementService, vitalsService, cfg.IdleTimeout, cfg.CORS)
 	httpServer := &http.Server{

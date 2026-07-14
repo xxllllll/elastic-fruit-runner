@@ -62,7 +62,7 @@ func New(cfg *config.Config) (*Service, error) {
 		scope := "org: " + org.Org
 		for j := range org.RunnerSets {
 			rs := &org.RunnerSets[j]
-			b, err := createBackend(rs)
+			b, err := createBackend(rs, cfg.CacheRoot)
 			if err != nil {
 				return nil, fmt.Errorf("create backend for runner set %s: %w", rs.Name, err)
 			}
@@ -80,7 +80,7 @@ func New(cfg *config.Config) (*Service, error) {
 		scope := "repo: " + repo.Repo
 		for j := range repo.RunnerSets {
 			rs := &repo.RunnerSets[j]
-			b, err := createBackend(rs)
+			b, err := createBackend(rs, cfg.CacheRoot)
 			if err != nil {
 				return nil, fmt.Errorf("create backend for runner set %s: %w", rs.Name, err)
 			}
@@ -171,12 +171,20 @@ func createClient(configURL string, auth *config.AuthConfig) (*scaleset.Client, 
 	}
 }
 
-func createBackend(rs *config.RunnerSetConfig) (backend.Backend, error) {
+func createBackend(rs *config.RunnerSetConfig, cacheRoot string) (backend.Backend, error) {
 	switch rs.Backend {
 	case "tart":
 		return backend.NewTartBackend(rs.Image), nil
 	case "docker":
 		return backend.NewDockerBackend(rs.Image, rs.Platform), nil
+	case "docker-host":
+		return backend.NewDockerHostBackend(backend.DockerHostOptions{
+			RunnerSet:      rs.Name,
+			Image:          rs.Image,
+			Platform:       rs.Platform,
+			CacheRoot:      cacheRoot,
+			CacheNamespace: rs.CacheNamespace,
+		}), nil
 	default:
 		return nil, fmt.Errorf("unknown backend %q for runner set %q", rs.Backend, rs.Name)
 	}

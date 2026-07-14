@@ -26,6 +26,7 @@ export default defineConfig({
 					label: 'How-to Guides',
 					items: [
 						{ slug: 'how-to/install-macos' },
+						{ slug: 'how-to/docker-host-orbstack' },
 						{ slug: 'how-to/prevent-macos-sleep' },
 						{ slug: 'how-to/install-linux-docker' },
 						{ slug: 'how-to/configure-github-app' },

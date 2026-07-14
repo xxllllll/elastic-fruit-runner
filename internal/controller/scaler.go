@@ -106,9 +106,9 @@ func (d *ScaleSetController) HandleJobCompleted(ctx context.Context, job *scales
 
 // startRunner is launched as a goroutine for each new runner.
 // It generates a JIT config, then calls backend.Run which sets up the
-// execution environment and starts the runner process. Once the runner is up
-// it moves to idle state and the goroutine exits — the runner's lifecycle
-// is then driven by job events.
+// execution environment and starts the runner process. Once backend launch
+// succeeds it moves to idle state and the goroutine exits. A JobStarted event
+// is the authoritative confirmation that GitHub assigned work to the runner.
 // The caller must call runners.addPreparing(name) before launching this goroutine.
 func (d *ScaleSetController) startRunner(ctx context.Context, name string) {
 	log := d.logger.With("runner", name)
@@ -242,10 +242,12 @@ func (d *ScaleSetController) removeGitHubRunner(ctx context.Context, name string
 
 // runnerState tracks the lifecycle phase of each runner.
 // preparing: VM is being cloned/started, no job assigned yet.
-// idle:       Runner process is up, waiting for GitHub to assign a job.
+// idle:       Backend launch succeeded; the runner is expected to connect and
 //
-//	The value is the time the runner entered idle state, used for
-//	idle timeout eviction (keepAliveTime semantics).
+//	            wait for GitHub to assign a job.
+//
+//		The value is the time the runner entered idle state, used for
+//		idle timeout eviction (keepAliveTime semantics).
 //
 // busy:       Runner has picked up a job and is executing it.
 type runnerState struct {

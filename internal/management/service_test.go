@@ -89,7 +89,7 @@ func TestCreateBackend_Docker(t *testing.T) {
 		Name:    "test",
 		Backend: "docker",
 		Image:   "ubuntu:latest",
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("createBackend(docker) error: %v", err)
 	}
@@ -98,12 +98,28 @@ func TestCreateBackend_Docker(t *testing.T) {
 	}
 }
 
+func TestCreateBackend_DockerHost(t *testing.T) {
+	t.Parallel()
+	b, err := createBackend(&config.RunnerSetConfig{
+		Name:           "test",
+		Backend:        "docker-host",
+		Platform:       "linux/amd64",
+		CacheNamespace: "project",
+	}, "/tmp/efr-cache")
+	if err != nil {
+		t.Fatalf("createBackend(docker-host) error: %v", err)
+	}
+	if _, ok := b.(*backend.DockerHostBackend); !ok {
+		t.Fatalf("expected *DockerHostBackend, got %T", b)
+	}
+}
+
 func TestCreateBackend_Unknown(t *testing.T) {
 	t.Parallel()
 	_, err := createBackend(&config.RunnerSetConfig{
 		Name:    "test",
 		Backend: "unknown",
-	})
+	}, "")
 	if err == nil {
 		t.Fatal("expected error for unknown backend")
 	}

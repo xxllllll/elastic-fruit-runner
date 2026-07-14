@@ -30,8 +30,8 @@ func TestNewServer_DefaultCORS(t *testing.T) {
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("OPTIONS status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
-	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "*" {
-		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", got, "*")
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want no default cross-origin access", got)
 	}
 	if got := rec.Header().Get("Access-Control-Allow-Methods"); got != "GET, POST, OPTIONS" {
 		t.Fatalf("Access-Control-Allow-Methods = %q, want %q", got, "GET, POST, OPTIONS")

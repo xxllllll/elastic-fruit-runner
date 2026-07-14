@@ -1,6 +1,13 @@
 # elastic-fruit-runner configuration
 # Place this file at: ~/.elastic-fruit-runner/config.yaml
 
+# Management API is local-only by default.
+api_addr: 127.0.0.1:8080
+
+# Required when a docker-host runner set is configured.
+# Use a host directory with enough space for shared build caches.
+# cache_root: /path/to/elastic-fruit-runner/cache
+
 # Organization-level runner sets
 orgs:
   - org: your-org
@@ -51,13 +58,29 @@ orgs:
 #         labels: [self-hosted, linux, arm64]
 #         max_runners: 2
 
+# First-phase Mac mini + OrbStack runner. Build the local image from
+# images/docker-host-runner before enabling this repository block.
+# repos:
+#   - repo: your-org/your-private-repo
+#     auth:
+#       pat_token: ghp_xxx
+#     runner_sets:
+#       - name: repo-orbstack-amd64
+#         backend: docker-host
+#         image: elastic-fruit-runner/docker-host-runner:2.332.0
+#         labels: [self-hosted, linux, amd64]
+#         max_runners: 1
+#         platform: linux/amd64
+#         cache_namespace: your-private-repo
+# cache_root: /path/to/elastic-fruit-runner/cache
+
 idle_timeout: 15m
 
-# CORS configuration for the API server. All fields default to permissive
-# values suitable for local development. In production, restrict these to
-# your dashboard's actual origin.
+# Cross-origin API access is disabled by default. The bundled dashboard is
+# served from the same address and does not require CORS. Configure an origin
+# only when a separate web application must call the API.
 # cors:
-#   allow_origin: "*"
+#   allow_origin: "https://dashboard.example.com"
 #   allow_methods: "GET, POST, OPTIONS"
 #   allow_headers: "Content-Type, Connect-Protocol-Version"
 #   expose_headers: "Connect-Protocol-Version"

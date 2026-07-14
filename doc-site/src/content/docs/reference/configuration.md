@@ -60,6 +60,7 @@ repos:
 
 idle_timeout: 15m
 log_level: info
+api_addr: 127.0.0.1:8080
 ```
 
 ## Top-level fields
@@ -70,6 +71,8 @@ log_level: info
 | `repos` | list | — | Repository-level runner set configurations |
 | `idle_timeout` | duration | `15m` | Time after which idle runners are reaped. Must be > 0 |
 | `log_level` | string | `info` | Log level: `debug`, `info`, `warn`, `error` |
+| `api_addr` | string | `127.0.0.1:8080` | Management API listen address |
+| `cache_root` | string | — | Absolute host path required by `docker-host` |
 
 At least one of `orgs` or `repos` must be configured.
 
@@ -126,11 +129,12 @@ For a **fine-grained** token:
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `name` | string | yes | — | Runner set name (used as `runs-on` label in workflows). Must be unique across all orgs/repos |
-| `backend` | string | yes | — | Backend type: `tart` or `docker` |
+| `backend` | string | yes | — | Backend type: `tart`, `docker`, or `docker-host` |
 | `image` | string | no | — | VM image (Tart) or container image (Docker) |
 | `labels` | list | no | — | Runner labels |
 | `max_runners` | integer | yes | — | Maximum concurrent runners. Must be > 0 |
 | `platform` | string | no | — | Docker platform (e.g., `linux/arm64`, `linux/amd64`) |
+| `cache_namespace` | string | docker-host | — | Project-safe cache namespace without path separators |
 
 ### Backend: `tart`
 
@@ -148,12 +152,26 @@ For Linux containers. Uses Docker-in-Docker.
 - `platform`: Specify for cross-architecture (e.g., `linux/amd64` for Rosetta 2 emulation on Apple Silicon)
 - Requires Docker installed and running on the host
 
-## Environment variables
+### Backend: `docker-host`
 
-Only one environment variable is supported:
+For the first-phase Mac mini + OrbStack deployment. The runner uses the active
+Docker Context Unix socket instead of starting an internal Docker daemon.
+
+- Repository-level runner sets only
+- `max_runners: 1`
+- `platform: linux/amd64`
+- `cache_root`: absolute host cache directory
+- `cache_namespace`: isolates project Cargo Target and sccache data
+- No `--privileged`; cleanup removes containers and anonymous volumes only
+- `DOCKER_HOST` is supported when it contains a `unix://` endpoint
+
+See [Docker host runners with OrbStack](/how-to/docker-host-orbstack/).
+
+## Environment variables
 
 | Variable | Config file equivalent | Description |
 |----------|----------------------|-------------|
 | `LOG_LEVEL` | `log_level` | Overrides the log level from config file |
+| `DOCKER_HOST` | — | Overrides Docker Context resolution for `docker-host`; must use `unix://` |
 
-All other configuration must be done through the YAML config file.
+All other application configuration must be done through the YAML config file.

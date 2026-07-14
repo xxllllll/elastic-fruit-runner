@@ -31,6 +31,7 @@ func LoadWithArgs(args []string) (*Config, error) {
 	// Defaults
 	v.SetDefault("idle_timeout", "15m")
 	v.SetDefault("log_level", "info")
+	v.SetDefault("api_addr", DefaultAPIAddr)
 
 	// Config file search
 	if *configPath != "" {
