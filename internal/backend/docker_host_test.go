@@ -14,7 +14,7 @@ import (
 func TestDockerHostRunArguments(t *testing.T) {
 	t.Parallel()
 	fake := &fakeDockerCommandRunner{results: successfulRunResults()}
-	backend, createdDirs := newTestDockerHostBackend(fake)
+	backend, createdDirs := newTestDockerHostBackend(fake, "linux/amd64")
 	const jit = "secret-jit-config"
 	if err := backend.Run(context.Background(), "repo-amd64-abc12", jit); err != nil {
 		t.Fatalf("Run() error: %v", err)
@@ -29,7 +29,8 @@ func TestDockerHostRunArguments(t *testing.T) {
 	assertContainsSequence(t, call.args, "--label", runnerNameLabel+"=repo-amd64-abc12")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/tmp/orbstack/docker.sock,dst=/var/run/docker.sock")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/shared/cargo-home,dst=/home/runner/.cargo")
-	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/cargo-target,dst=/home/runner/.cache/efr/cargo-target")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-amd64/cargo-target,dst=/home/runner/.cache/efr/cargo-target")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-amd64/sccache,dst=/home/runner/.cache/sccache")
 	if slices.Contains(call.args, "--privileged") {
 		t.Fatal("docker run arguments unexpectedly contain --privileged")
 	}
@@ -39,13 +40,64 @@ func TestDockerHostRunArguments(t *testing.T) {
 	if !slices.Contains(call.env, "ACTIONS_RUNNER_INPUT_JITCONFIG="+jit) {
 		t.Fatalf("Docker command environment does not contain JIT config: %v", call.env)
 	}
-	assertCacheDirectories(t, createdDirs)
+	assertCacheDirectories(t, createdDirs, "linux-amd64")
+}
+
+func TestDockerHostRunArgumentsARM64(t *testing.T) {
+	t.Parallel()
+	fake := &fakeDockerCommandRunner{results: successfulRunResults()}
+	backend, createdDirs := newTestDockerHostBackend(fake, "linux/arm64")
+	const jit = "secret-jit-config"
+	if err := backend.Run(context.Background(), "repo-arm64-abc12", jit); err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	call := fake.calls[2]
+	assertContainsSequence(t, call.args, "--platform", "linux/arm64")
+	assertContainsSequence(t, call.args, "--label", runnerSetLabel+"=repo-arm64")
+	assertContainsSequence(t, call.args, "--label", runnerNameLabel+"=repo-arm64-abc12")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-arm64/cargo-target,dst=/home/runner/.cache/efr/cargo-target")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-arm64/sccache,dst=/home/runner/.cache/sccache")
+	if slices.Contains(call.args, "--privileged") {
+		t.Fatal("docker run arguments unexpectedly contain --privileged")
+	}
+	assertCacheDirectories(t, createdDirs, "linux-arm64")
+}
+
+func TestDockerHostCachePlatformSegment(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		platform string
+		want     string
+		wantErr  bool
+	}{
+		{platform: "linux/amd64", want: "linux-amd64"},
+		{platform: "linux/arm64", want: "linux-arm64"},
+		{platform: "linux/riscv64", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.platform, func(t *testing.T) {
+			got, err := dockerHostCachePlatformSegment(tt.platform)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("dockerHostCachePlatformSegment(%q) expected error", tt.platform)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("dockerHostCachePlatformSegment(%q) error: %v", tt.platform, err)
+			}
+			if got != tt.want {
+				t.Fatalf("dockerHostCachePlatformSegment(%q) = %q, want %q", tt.platform, got, tt.want)
+			}
+		})
+	}
 }
 
 func TestDockerHostRunRejectsEmptyJITConfig(t *testing.T) {
 	t.Parallel()
 	fake := &fakeDockerCommandRunner{}
-	backend, _ := newTestDockerHostBackend(fake)
+	backend, _ := newTestDockerHostBackend(fake, "linux/amd64")
 	if err := backend.Run(context.Background(), "repo-amd64-abc12", ""); err == nil {
 		t.Fatal("Run() expected error for an empty JIT config")
 	}
@@ -62,7 +114,7 @@ func TestDockerHostRunRedactsJITConfig(t *testing.T) {
 		{output: "unix:///tmp/orbstack/docker.sock\n"},
 		{output: "invalid environment " + jit, err: errors.New("exit 125")},
 	}}
-	backend, _ := newTestDockerHostBackend(fake)
+	backend, _ := newTestDockerHostBackend(fake, "linux/amd64")
 	var logs bytes.Buffer
 	backend.logger = slog.New(slog.NewTextHandler(&logs, nil))
 	err := backend.Run(context.Background(), "repo-amd64-abc12", jit)
@@ -87,7 +139,7 @@ func TestDockerHostCleanupRemovesOnlyLabeledRunner(t *testing.T) {
 		{output: "container-id\n"},
 		{},
 	}}
-	backend, _ := newTestDockerHostBackend(fake)
+	backend, _ := newTestDockerHostBackend(fake, "linux/amd64")
 	backend.Cleanup(context.Background(), "repo-amd64-abc12")
 
 	filters := strings.Join(fake.calls[2].args, " ")
@@ -106,7 +158,7 @@ func TestDockerHostCleanupIsIdempotent(t *testing.T) {
 		{output: "unix:///tmp/orbstack/docker.sock\n"},
 		{output: "\n"},
 	}}
-	backend, _ := newTestDockerHostBackend(fake)
+	backend, _ := newTestDockerHostBackend(fake, "linux/amd64")
 	backend.Cleanup(context.Background(), "missing-runner")
 	if len(fake.calls) != 3 {
 		t.Fatalf("Docker calls = %d, want no rm call", len(fake.calls))
@@ -121,7 +173,7 @@ func TestDockerHostCleanupAllUsesManagementLabels(t *testing.T) {
 		{output: "one\ntwo\n"},
 		{},
 	}}
-	backend, _ := newTestDockerHostBackend(fake)
+	backend, _ := newTestDockerHostBackend(fake, "linux/amd64")
 	backend.CleanupAll(context.Background(), "repo-amd64")
 	filters := strings.Join(fake.calls[2].args, " ")
 	if !strings.Contains(filters, managedLabel+"=true") || !strings.Contains(filters, runnerSetLabel+"=repo-amd64") {
@@ -141,10 +193,14 @@ func successfulRunResults() []fakeDockerResult {
 	}
 }
 
-func newTestDockerHostBackend(fake *fakeDockerCommandRunner) (result *DockerHostBackend, createdDirs *[]string) {
+func newTestDockerHostBackend(fake *fakeDockerCommandRunner, platform string) (result *DockerHostBackend, createdDirs *[]string) {
+	runnerSet := "repo-amd64"
+	if platform == "linux/arm64" {
+		runnerSet = "repo-arm64"
+	}
 	result = NewDockerHostBackend(DockerHostOptions{
-		RunnerSet:      "repo-amd64",
-		Platform:       "linux/amd64",
+		RunnerSet:      runnerSet,
+		Platform:       platform,
 		CacheRoot:      "/cache/efr",
 		CacheNamespace: "cloudspine",
 	})
@@ -159,12 +215,12 @@ func newTestDockerHostBackend(fake *fakeDockerCommandRunner) (result *DockerHost
 	return result, &created
 }
 
-func assertCacheDirectories(t *testing.T, created *[]string) {
+func assertCacheDirectories(t *testing.T, created *[]string, platformSegment string) {
 	t.Helper()
 	want := []string{
 		"/cache/efr/shared/cargo-home",
-		"/cache/efr/cloudspine/cargo-target",
-		"/cache/efr/cloudspine/sccache",
+		"/cache/efr/cloudspine/" + platformSegment + "/cargo-target",
+		"/cache/efr/cloudspine/" + platformSegment + "/sccache",
 		"/cache/efr/shared/pnpm-store",
 		"/cache/efr/shared/tool-cache",
 	}

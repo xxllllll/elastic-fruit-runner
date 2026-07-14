@@ -205,10 +205,15 @@ func (b *DockerHostBackend) removeContainers(ctx context.Context, request docker
 }
 
 func (b *DockerHostBackend) prepareCacheMounts() ([]string, error) {
+	platformSegment, err := dockerHostCachePlatformSegment(b.options.Platform)
+	if err != nil {
+		return nil, err
+	}
+	projectCacheRoot := filepath.Join(b.options.CacheRoot, b.options.CacheNamespace, platformSegment)
 	paths := []struct{ source, target string }{
 		{filepath.Join(b.options.CacheRoot, "shared", "cargo-home"), "/home/runner/.cargo"},
-		{filepath.Join(b.options.CacheRoot, b.options.CacheNamespace, "cargo-target"), "/home/runner/.cache/efr/cargo-target"},
-		{filepath.Join(b.options.CacheRoot, b.options.CacheNamespace, "sccache"), "/home/runner/.cache/sccache"},
+		{filepath.Join(projectCacheRoot, "cargo-target"), "/home/runner/.cache/efr/cargo-target"},
+		{filepath.Join(projectCacheRoot, "sccache"), "/home/runner/.cache/sccache"},
 		{filepath.Join(b.options.CacheRoot, "shared", "pnpm-store"), "/home/runner/.cache/pnpm-store"},
 		{filepath.Join(b.options.CacheRoot, "shared", "tool-cache"), "/opt/hostedtoolcache"},
 	}
@@ -220,6 +225,17 @@ func (b *DockerHostBackend) prepareCacheMounts() ([]string, error) {
 		mounts = append(mounts, bindMount(item.source, item.target))
 	}
 	return mounts, nil
+}
+
+func dockerHostCachePlatformSegment(platform string) (string, error) {
+	switch platform {
+	case "linux/amd64":
+		return "linux-amd64", nil
+	case "linux/arm64":
+		return "linux-arm64", nil
+	default:
+		return "", fmt.Errorf("unsupported docker-host cache platform %q", platform)
+	}
 }
 
 func bindMount(source, target string) string {

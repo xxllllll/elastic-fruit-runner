@@ -47,17 +47,23 @@ The `docker-host` backend runs an ephemeral JIT runner container against the
 active Docker CLI context. It does not use `--privileged` or start a Docker
 daemon inside the runner.
 
-Build the pinned AMD64 runner image:
+Build a pinned runner image for the required architecture:
 
 ```sh
 docker build \
   --platform linux/amd64 \
-  -t elastic-fruit-runner/docker-host-runner:2.332.0 \
+  -t elastic-fruit-runner/docker-host-runner:2.332.0-amd64 \
+  images/docker-host-runner
+
+docker build \
+  --platform linux/arm64 \
+  -t elastic-fruit-runner/docker-host-runner:2.332.0-arm64 \
   images/docker-host-runner
 ```
 
 The first phase supports one repository-level runner set with
-`max_runners: 1` and `platform: linux/amd64`. See the
+`max_runners: 1` and either `platform: linux/amd64` or
+`platform: linux/arm64`. See the
 [OrbStack guide](https://elastic-fruit-runner.pages.dev/how-to/docker-host-orbstack/)
 and `config.example.yaml` for configuration and cache layout.
 

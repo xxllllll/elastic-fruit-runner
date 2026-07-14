@@ -1,6 +1,6 @@
 ---
 title: Docker host runners with OrbStack
-description: Run one ephemeral Linux AMD64 JIT runner through the active OrbStack Docker context.
+description: Run one ephemeral Linux AMD64 or ARM64 JIT runner through the active OrbStack Docker context.
 ---
 
 The `docker-host` backend is the first-phase Mac mini MVP. It creates no idle
@@ -11,7 +11,7 @@ Context Unix socket.
 
 - Apple Silicon Mac with OrbStack running
 - Active Docker Context with a `unix://` endpoint
-- Docker support for `linux/amd64`
+- Docker support for `linux/amd64` or `linux/arm64`
 - One private repository runner set with `max_runners: 1`
 
 Verify the active context without copying its path into configuration:
@@ -30,7 +30,12 @@ SSH endpoints are rejected in this phase.
 ```sh
 docker build \
   --platform linux/amd64 \
-  -t elastic-fruit-runner/docker-host-runner:2.332.0 \
+  -t elastic-fruit-runner/docker-host-runner:2.332.0-amd64 \
+  images/docker-host-runner
+
+docker build \
+  --platform linux/arm64 \
+  -t elastic-fruit-runner/docker-host-runner:2.332.0-arm64 \
   images/docker-host-runner
 ```
 
@@ -51,7 +56,7 @@ repos:
     runner_sets:
       - name: repo-orbstack-amd64
         backend: docker-host
-        image: elastic-fruit-runner/docker-host-runner:2.332.0
+        image: elastic-fruit-runner/docker-host-runner:2.332.0-amd64
         labels: [self-hosted, linux, amd64]
         max_runners: 1
         platform: linux/amd64
@@ -59,6 +64,11 @@ repos:
 
 idle_timeout: 15m
 ```
+
+For a native Apple Silicon runner, use the `2.332.0-arm64` image, set
+`platform: linux/arm64`, replace the `amd64` label with `arm64`, and use a
+distinct Runner Set name such as `repo-orbstack-arm64`. Only one
+`docker-host` Runner Set can be configured at a time.
 
 Keep the real PAT or GitHub App private key outside the repository. Do not put
 JIT configuration, runner tokens, or credentials under `cache_root`.
@@ -72,14 +82,17 @@ cache_root/
   shared/cargo-home/
   shared/pnpm-store/
   shared/tool-cache/
-  <cache_namespace>/cargo-target/
-  <cache_namespace>/sccache/
+  <cache_namespace>/linux-amd64/cargo-target/
+  <cache_namespace>/linux-amd64/sccache/
+  <cache_namespace>/linux-arm64/cargo-target/
+  <cache_namespace>/linux-arm64/sccache/
 ```
 
-Cargo Target and sccache are project-scoped. Cargo Home, pnpm store, and the
-Runner Tool Cache are shared. The runner work directory remains ephemeral.
-BuildKit cache remains in the host Docker Engine and is never deleted by runner
-cleanup.
+Cargo Target and sccache are project- and Platform-scoped. Existing AMD64
+project caches from versions without the Platform directory are not moved and
+will have one cold rebuild. Cargo Home, pnpm store, and the Runner Tool Cache
+remain shared. The runner work directory remains ephemeral. BuildKit cache
+remains in the host Docker Engine and is never deleted by runner cleanup.
 
 ## Validate with a JIT smoke job
 
@@ -131,9 +144,9 @@ named volumes, host cache directories, or BuildKit state.
 
 - One repository-level runner set
 - One concurrent runner
-- Linux AMD64 only
+- Linux AMD64 or ARM64, one Platform at a time
 - Production service installation and automatic startup are not included
 - No remote wake after the Mac enters full sleep
 
-Later phases can add ARM64, multiple repositories, concurrency, and production
-service deployment after the single-runner path is validated.
+Later phases can add multiple repositories, concurrency, and production service
+deployment after the single-runner path is validated.

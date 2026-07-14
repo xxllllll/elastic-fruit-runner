@@ -16,8 +16,8 @@ func validateDockerHostRunnerSet(rs *RunnerSetConfig, validation runnerSetValida
 	if rs.Platform == "" {
 		rs.Platform = "linux/amd64"
 	}
-	if rs.Platform != "linux/amd64" {
-		return fmt.Errorf("%s.platform must be linux/amd64 for docker-host in the first phase, got %q", prefix, rs.Platform)
+	if rs.Platform != "linux/amd64" && rs.Platform != "linux/arm64" {
+		return fmt.Errorf("%s.platform must be linux/amd64 or linux/arm64 for docker-host, got %q", prefix, rs.Platform)
 	}
 	if validation.cacheRoot == "" || !filepath.IsAbs(validation.cacheRoot) {
 		return fmt.Errorf("cache_root must be an absolute path when docker-host is configured, got %q", validation.cacheRoot)

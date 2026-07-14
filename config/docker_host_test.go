@@ -32,6 +32,15 @@ func TestValidateDockerHost(t *testing.T) {
 	}
 }
 
+func TestValidateDockerHostARM64(t *testing.T) {
+	t.Parallel()
+	cfg := validDockerHostConfig()
+	cfg.Repos[0].RunnerSets[0].Platform = "linux/arm64"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate() error: %v", err)
+	}
+}
+
 func TestValidateDockerHostRestrictions(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -40,7 +49,7 @@ func TestValidateDockerHostRestrictions(t *testing.T) {
 		wantErr string
 	}{
 		{"max runners", func(c *Config) { c.Repos[0].RunnerSets[0].MaxRunners = 2 }, "max_runners must be 1"},
-		{"platform", func(c *Config) { c.Repos[0].RunnerSets[0].Platform = "linux/arm64" }, "platform must be linux/amd64"},
+		{"platform", func(c *Config) { c.Repos[0].RunnerSets[0].Platform = "linux/riscv64" }, "platform must be linux/amd64 or linux/arm64"},
 		{"cache root", func(c *Config) { c.CacheRoot = "relative/cache" }, "cache_root must be an absolute path"},
 		{"empty namespace", func(c *Config) { c.Repos[0].RunnerSets[0].CacheNamespace = "" }, "cache_namespace"},
 		{"traversal namespace", func(c *Config) { c.Repos[0].RunnerSets[0].CacheNamespace = "../shared" }, "cache_namespace"},

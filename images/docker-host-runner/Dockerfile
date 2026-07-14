@@ -5,14 +5,27 @@ USER root
 ARG TARGETARCH
 ARG DOCKER_COMPOSE_VERSION=2.40.3
 ARG DOCKER_COMPOSE_AMD64_SHA256=dba9d98e1ba5bfe11d88c99b9bd32fc4a0624a30fafe68eea34d61a3e42fd372
+ARG DOCKER_COMPOSE_ARM64_SHA256=d26373b19e89160546d15407516cc59f453030d9bc5b43ba7faf16f7b4980137
 
 RUN set -eux; \
-    test "$TARGETARCH" = "amd64"; \
-    asset="docker-compose-linux-x86_64"; \
+    case "$TARGETARCH" in \
+      amd64) \
+        asset="docker-compose-linux-x86_64"; \
+        checksum="$DOCKER_COMPOSE_AMD64_SHA256"; \
+        ;; \
+      arm64) \
+        asset="docker-compose-linux-aarch64"; \
+        checksum="$DOCKER_COMPOSE_ARM64_SHA256"; \
+        ;; \
+      *) \
+        echo "unsupported Docker host runner architecture: $TARGETARCH" >&2; \
+        exit 1; \
+        ;; \
+    esac; \
     curl -fsSL \
       "https://github.com/docker/compose/releases/download/v${DOCKER_COMPOSE_VERSION}/${asset}" \
       -o "/tmp/${asset}"; \
-    echo "${DOCKER_COMPOSE_AMD64_SHA256}  /tmp/${asset}" | sha256sum -c -; \
+    echo "${checksum}  /tmp/${asset}" | sha256sum -c -; \
     install -m 0755 "/tmp/${asset}" /usr/local/lib/docker/cli-plugins/docker-compose; \
     rm -f "/tmp/${asset}"; \
     rm -f \

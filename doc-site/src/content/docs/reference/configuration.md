@@ -154,14 +154,15 @@ For Linux containers. Uses Docker-in-Docker.
 
 ### Backend: `docker-host`
 
-For the first-phase Mac mini + OrbStack deployment. The runner uses the active
+For the Mac mini + OrbStack deployment. The runner uses the active
 Docker Context Unix socket instead of starting an internal Docker daemon.
 
 - Repository-level runner sets only
 - `max_runners: 1`
-- `platform: linux/amd64`
+- `platform`: `linux/amd64` or `linux/arm64`; defaults to `linux/amd64`
 - `cache_root`: absolute host cache directory
-- `cache_namespace`: isolates project Cargo Target and sccache data
+- `cache_namespace`: isolates project Cargo Target and sccache data; project
+  caches are additionally separated by Platform
 - No `--privileged`; cleanup removes containers and anonymous volumes only
 - `DOCKER_HOST` is supported when it contains a `unix://` endpoint
 

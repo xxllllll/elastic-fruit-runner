@@ -67,11 +67,13 @@ orgs:
 #     runner_sets:
 #       - name: repo-orbstack-amd64
 #         backend: docker-host
-#         image: elastic-fruit-runner/docker-host-runner:2.332.0
+#         image: elastic-fruit-runner/docker-host-runner:2.332.0-amd64
 #         labels: [self-hosted, linux, amd64]
 #         max_runners: 1
 #         platform: linux/amd64
 #         cache_namespace: your-private-repo
+#         # For a native Apple Silicon runner, use the ARM64 image, change the
+#         # platform to linux/arm64, and replace the amd64 label with arm64.
 # cache_root: /path/to/elastic-fruit-runner/cache
 
 idle_timeout: 15m
