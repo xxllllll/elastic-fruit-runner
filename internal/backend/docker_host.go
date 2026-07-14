@@ -122,6 +122,7 @@ func (b *DockerHostBackend) runArgs(input dockerRunInput) []string {
 		"--label", runnerNameLabel+"="+input.name,
 		"--env", "ACTIONS_RUNNER_INPUT_JITCONFIG",
 		"--env", "CARGO_HOME=/home/runner/.cargo",
+		"--env", "RUSTUP_HOME=/home/runner/.rustup",
 		"--env", "CARGO_TARGET_DIR=/home/runner/.cache/efr/cargo-target",
 		"--env", "SCCACHE_DIR=/home/runner/.cache/sccache",
 		"--env", "NPM_CONFIG_STORE_DIR=/home/runner/.cache/pnpm-store",
@@ -211,7 +212,8 @@ func (b *DockerHostBackend) prepareCacheMounts() ([]string, error) {
 	}
 	projectCacheRoot := filepath.Join(b.options.CacheRoot, b.options.CacheNamespace, platformSegment)
 	paths := []struct{ source, target string }{
-		{filepath.Join(b.options.CacheRoot, "shared", "cargo-home"), "/home/runner/.cargo"},
+		{filepath.Join(projectCacheRoot, "cargo-home"), "/home/runner/.cargo"},
+		{filepath.Join(projectCacheRoot, "rustup-home"), "/home/runner/.rustup"},
 		{filepath.Join(projectCacheRoot, "cargo-target"), "/home/runner/.cache/efr/cargo-target"},
 		{filepath.Join(projectCacheRoot, "sccache"), "/home/runner/.cache/sccache"},
 		{filepath.Join(b.options.CacheRoot, "shared", "pnpm-store"), "/home/runner/.cache/pnpm-store"},

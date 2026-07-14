@@ -39,9 +39,16 @@ docker build \
   images/docker-host-runner
 ```
 
-The image pins GitHub Actions Runner `2.332.0` and Docker Compose `2.40.3`.
-It includes Docker CLI and Buildx, removes Docker daemon executables, and
-contains no repository credentials.
+The image pins GitHub Actions Runner `2.332.0`, GitHub CLI `2.96.0`, Rustup
+initializer `1.29.0`, and Docker Compose `2.40.3`. It includes GCC, G++, Make,
+CMake, pkg-config, Docker CLI, and Buildx. It removes Docker daemon executables
+and contains no repository credentials or project-specific Rust toolchain.
+
+Verify both image architectures locally with:
+
+```sh
+images/docker-host-runner/test.sh
+```
 
 ## Configure one repository
 
@@ -79,20 +86,39 @@ The backend creates these host directories:
 
 ```text
 cache_root/
-  shared/cargo-home/
   shared/pnpm-store/
   shared/tool-cache/
+  <cache_namespace>/linux-amd64/cargo-home/
+  <cache_namespace>/linux-amd64/rustup-home/
   <cache_namespace>/linux-amd64/cargo-target/
   <cache_namespace>/linux-amd64/sccache/
+  <cache_namespace>/linux-arm64/cargo-home/
+  <cache_namespace>/linux-arm64/rustup-home/
   <cache_namespace>/linux-arm64/cargo-target/
   <cache_namespace>/linux-arm64/sccache/
 ```
 
-Cargo Target and sccache are project- and Platform-scoped. Existing AMD64
-project caches from versions without the Platform directory are not moved and
-will have one cold rebuild. Cargo Home, pnpm store, and the Runner Tool Cache
-remain shared. The runner work directory remains ephemeral. BuildKit cache
-remains in the host Docker Engine and is never deleted by runner cleanup.
+Cargo Home, Rustup Home, Cargo Target, and sccache are project- and
+Platform-scoped. This prevents Cargo configuration, Rustup proxy executables,
+and installed toolchains from crossing repository or CPU architecture
+boundaries. The old `shared/cargo-home` directory is not copied or deleted, so
+the first job after this change has a cold Cargo and Rustup cache. The pnpm
+store and Runner Tool Cache remain shared. The runner work directory remains
+ephemeral. BuildKit cache remains in the host Docker Engine and is never
+deleted by runner cleanup.
+
+The image places `/home/runner/.cargo/bin` on `PATH`. Initialize an empty Rust
+cache before the first `rustup` command:
+
+```sh
+if ! command -v rustup >/dev/null 2>&1; then
+  rustup-init -y --profile minimal --default-toolchain none --no-modify-path
+fi
+rustup show active-toolchain
+```
+
+The repository's `rust-toolchain.toml` remains responsible for selecting the
+actual Rust version.
 
 ## Validate with a JIT smoke job
 

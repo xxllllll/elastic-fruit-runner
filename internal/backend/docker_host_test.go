@@ -28,7 +28,10 @@ func TestDockerHostRunArguments(t *testing.T) {
 	assertContainsSequence(t, call.args, "--label", runnerSetLabel+"=repo-amd64")
 	assertContainsSequence(t, call.args, "--label", runnerNameLabel+"=repo-amd64-abc12")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/tmp/orbstack/docker.sock,dst=/var/run/docker.sock")
-	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/shared/cargo-home,dst=/home/runner/.cargo")
+	assertContainsSequence(t, call.args, "--env", "CARGO_HOME=/home/runner/.cargo")
+	assertContainsSequence(t, call.args, "--env", "RUSTUP_HOME=/home/runner/.rustup")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-amd64/cargo-home,dst=/home/runner/.cargo")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-amd64/rustup-home,dst=/home/runner/.rustup")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-amd64/cargo-target,dst=/home/runner/.cache/efr/cargo-target")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-amd64/sccache,dst=/home/runner/.cache/sccache")
 	if slices.Contains(call.args, "--privileged") {
@@ -56,6 +59,8 @@ func TestDockerHostRunArgumentsARM64(t *testing.T) {
 	assertContainsSequence(t, call.args, "--platform", "linux/arm64")
 	assertContainsSequence(t, call.args, "--label", runnerSetLabel+"=repo-arm64")
 	assertContainsSequence(t, call.args, "--label", runnerNameLabel+"=repo-arm64-abc12")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-arm64/cargo-home,dst=/home/runner/.cargo")
+	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-arm64/rustup-home,dst=/home/runner/.rustup")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-arm64/cargo-target,dst=/home/runner/.cache/efr/cargo-target")
 	assertContainsSequence(t, call.args, "--mount", "type=bind,src=/cache/efr/cloudspine/linux-arm64/sccache,dst=/home/runner/.cache/sccache")
 	if slices.Contains(call.args, "--privileged") {
@@ -218,7 +223,8 @@ func newTestDockerHostBackend(fake *fakeDockerCommandRunner, platform string) (r
 func assertCacheDirectories(t *testing.T, created *[]string, platformSegment string) {
 	t.Helper()
 	want := []string{
-		"/cache/efr/shared/cargo-home",
+		"/cache/efr/cloudspine/" + platformSegment + "/cargo-home",
+		"/cache/efr/cloudspine/" + platformSegment + "/rustup-home",
 		"/cache/efr/cloudspine/" + platformSegment + "/cargo-target",
 		"/cache/efr/cloudspine/" + platformSegment + "/sccache",
 		"/cache/efr/shared/pnpm-store",
