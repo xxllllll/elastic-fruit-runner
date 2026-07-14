@@ -27,7 +27,7 @@ orgs:
 
   - org: org-two
     auth:
-      pat_token: ghp_xxx
+      pat_token: github_pat_xxx
     runner_group: Default
     runner_sets:
       - name: org-two-linux
@@ -46,7 +46,7 @@ Use `repos` for repository-scoped runners. Each entry uses `owner/repo` format:
 repos:
   - repo: your-org/your-repo
     auth:
-      pat_token: ghp_xxx
+      pat_token: github_pat_xxx
     runner_sets:
       - name: repo-runner
         backend: docker

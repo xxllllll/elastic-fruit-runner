@@ -47,7 +47,7 @@ cache_root: /path/to/elastic-fruit-runner/cache
 repos:
   - repo: your-org/your-private-repo
     auth:
-      pat_token: ghp_xxx
+      pat_token: github_pat_xxx
     runner_sets:
       - name: repo-orbstack-amd64
         backend: docker-host
@@ -81,6 +81,45 @@ Runner Tool Cache are shared. The runner work directory remains ephemeral.
 BuildKit cache remains in the host Docker Engine and is never deleted by runner
 cleanup.
 
+## Validate with a JIT smoke job
+
+Use a private test repository and a fine-grained PAT restricted to that
+repository. Repository-level JIT configuration requires `Administration: Read
+and write`; other repository permissions can remain disabled. Keep the token in
+the local EFR configuration only.
+
+Create a temporary workflow that targets the runner set name exactly:
+
+```yaml
+name: EFR JIT Smoke
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: repo-orbstack-amd64
+    timeout-minutes: 10
+    steps:
+      - name: Verify host-socket runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "x86_64"
+          test -S /var/run/docker.sock
+          ! command -v dockerd
+          docker version
+          docker buildx version
+          docker compose version
+          docker run --rm --platform linux/amd64 alpine:3.22 uname -m
+```
+
+A successful smoke must also leave zero EFR runner containers after the job,
+preserve the configured cache directories, and leave unrelated containers and
+named volumes unchanged.
+
 ## Cleanup behavior
 
 Containers receive explicit EFR ownership, runner-set, and runner-name labels.
@@ -93,7 +132,7 @@ named volumes, host cache directories, or BuildKit state.
 - One repository-level runner set
 - One concurrent runner
 - Linux AMD64 only
-- No real workflow smoke test is performed until credentials are supplied
+- Production service installation and automatic startup are not included
 - No remote wake after the Mac enters full sleep
 
 Later phases can add ARM64, multiple repositories, concurrency, and production

@@ -26,7 +26,7 @@ orgs:
         installation_id: 12345678
         private_key_path: /path/to/private-key.pem
       # Option B: Personal Access Token (uncomment and remove github_app above)
-      # pat_token: ghp_xxx
+      # pat_token: github_pat_xxx
     runner_group: Default
     runner_sets:
       - name: efr-macos-arm64
@@ -50,7 +50,7 @@ orgs:
 repos:
   - repo: your-org/your-repo
     auth:
-      pat_token: ghp_xxx
+      pat_token: github_pat_xxx
     runner_sets:
       - name: repo-runner
         backend: docker
