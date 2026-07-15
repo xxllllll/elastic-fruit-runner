@@ -2,10 +2,12 @@
 
 Elastic GitHub Actions self-hosted runner manager for Apple Silicon.
 
-- **Tart mode** — ephemeral macOS VMs via [Tart](https://tart.run), one per job, auto-scaled
+- **Tart mode** — ephemeral macOS VMs via [Tart](https://tart.run), one per
+  job, auto-scaled
 - **Linux arm64 / amd64** via Docker (Docker-in-Docker)
 - **Linux amd64 on OrbStack** via a host Docker socket, without privileged DinD
-- Powered by the official [GitHub Runner Scale Set Client](https://github.com/actions/scaleset) (Go)
+- Powered by the official
+  [GitHub Runner Scale Set Client](https://github.com/actions/scaleset) (Go)
 
 > **Status:** PoC — core flow works, not production-hardened yet.
 
@@ -47,7 +49,23 @@ The `docker-host` backend runs an ephemeral JIT runner container against the
 active Docker CLI context. It does not use `--privileged` or start a Docker
 daemon inside the runner.
 
-Build a pinned runner image for the required architecture:
+Resolve the published multi-platform image to an immutable OCI Index digest:
+
+```sh
+images/docker-host-runner/resolve-release.sh 2.332.0-r1
+```
+
+Use the printed `image=...@sha256:...` value together with an explicit
+`platform`. The same index contains AMD64 and ARM64 images. Verify the remote
+release with:
+
+```sh
+RUNNER_IMAGE="ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner"
+EFR_IMAGE_TEST_REFERENCE="${RUNNER_IMAGE}@sha256:<index-digest>" \
+  images/docker-host-runner/test.sh
+```
+
+For local image development, build architecture-specific tags:
 
 ```sh
 docker build \

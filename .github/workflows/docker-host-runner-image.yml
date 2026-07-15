@@ -1,0 +1,169 @@
+name: Docker Host Runner Image
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/docker-host-runner-image.yml"
+      - "images/docker-host-runner/**"
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Image revision for the Dockerfile runner version
+        required: true
+        default: "1"
+        type: string
+
+concurrency:
+  group: docker-host-runner-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: amd64,arm64
+
+      - name: Verify release resolver
+        run: images/docker-host-runner/resolve-release_test.sh
+
+      - name: Verify AMD64 and ARM64 image contracts
+        run: images/docker-host-runner/test.sh
+
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: amd64,arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare release identity
+        id: release
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          IMAGE_REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_REF_NAME}" == "${DEFAULT_BRANCH}" ]] || {
+            echo "image publishing requires the default branch: ref=${GITHUB_REF_NAME} default=${DEFAULT_BRANCH}" >&2
+            exit 1
+          }
+          [[ "${IMAGE_REVISION}" =~ ^[1-9][0-9]*$ ]] || {
+            echo "image revision must be a positive integer: value=${IMAGE_REVISION}" >&2
+            exit 1
+          }
+          runner_version=$(sed -n \
+            's#^FROM ghcr.io/actions/actions-runner:\([^@]*\)@.*#\1#p' \
+            images/docker-host-runner/Dockerfile)
+          [[ "${runner_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "cannot derive the Actions Runner version from Dockerfile: value=${runner_version}" >&2
+            exit 1
+          }
+          repository="ghcr.io/${GITHUB_REPOSITORY,,}/docker-host-runner"
+          tag="${runner_version}-r${IMAGE_REVISION}"
+          sha_tag="sha-${GITHUB_SHA}"
+          {
+            echo "repository=${repository}"
+            echo "tag=${tag}"
+            echo "sha_tag=${sha_tag}"
+            echo "version_ref=${repository}:${tag}"
+            echo "sha_ref=${repository}:${sha_tag}"
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Build and publish OCI index
+        id: build
+        env:
+          REPOSITORY: ${{ steps.release.outputs.repository }}
+          SHA_REF: ${{ steps.release.outputs.sha_ref }}
+          VERSION_REF: ${{ steps.release.outputs.version_ref }}
+        run: |
+          set -euo pipefail
+          for reference in "${VERSION_REF}" "${SHA_REF}"; do
+            if docker buildx imagetools inspect "${reference}" >/dev/null 2>&1; then
+              echo "refusing to replace an existing image tag: reference=${reference}" >&2
+              exit 1
+            fi
+          done
+          metadata_file="${RUNNER_TEMP}/docker-host-runner-metadata.json"
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false \
+            --sbom=false \
+            --output type=registry,oci-mediatypes=true \
+            --tag "${VERSION_REF}" \
+            --tag "${SHA_REF}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.version=${VERSION_REF##*:}" \
+            --metadata-file "${metadata_file}" \
+            images/docker-host-runner
+          digest=$(jq -er '."containerimage.digest"' "${metadata_file}")
+          [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            echo "Buildx returned an invalid OCI index digest: value=${digest}" >&2
+            exit 1
+          }
+          echo "digest=${digest}" >>"${GITHUB_OUTPUT}"
+
+      - name: Verify published tags and platform contracts
+        id: verify
+        env:
+          EXPECTED_DIGEST: ${{ steps.build.outputs.digest }}
+          REPOSITORY: ${{ steps.release.outputs.repository }}
+          SHA_REF: ${{ steps.release.outputs.sha_ref }}
+          VERSION_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          release_file="${RUNNER_TEMP}/docker-host-runner-release.env"
+          RUNNER_IMAGE_REPOSITORY="${REPOSITORY}" \
+            images/docker-host-runner/resolve-release.sh "${VERSION_TAG}" | tee "${release_file}"
+          image_ref=$(sed -n 's/^image=//p' "${release_file}")
+          amd64_digest=$(sed -n 's/^amd64_digest=//p' "${release_file}")
+          arm64_digest=$(sed -n 's/^arm64_digest=//p' "${release_file}")
+          [[ "${image_ref}" == "${REPOSITORY}@${EXPECTED_DIGEST}" ]]
+          sha_digest=$(docker buildx imagetools inspect "${SHA_REF}" \
+            --format '{{json .Manifest}}' | jq -er '.digest')
+          [[ "${sha_digest}" == "${EXPECTED_DIGEST}" ]]
+          EFR_IMAGE_TEST_REFERENCE="${image_ref}" images/docker-host-runner/test.sh
+          {
+            echo "image_ref=${image_ref}"
+            echo "amd64_digest=${amd64_digest}"
+            echo "arm64_digest=${arm64_digest}"
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Publish verification summary
+        env:
+          AMD64_DIGEST: ${{ steps.verify.outputs.amd64_digest }}
+          ARM64_DIGEST: ${{ steps.verify.outputs.arm64_digest }}
+          IMAGE_REF: ${{ steps.verify.outputs.image_ref }}
+          SHA_TAG: ${{ steps.release.outputs.sha_tag }}
+          VERSION_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          {
+            echo "## Docker Host Runner Image"
+            echo
+            echo "- Version tag: \`${VERSION_TAG}\`"
+            echo "- Source tag: \`${SHA_TAG}\`"
+            echo "- Digest reference: \`${IMAGE_REF}\`"
+            echo "- AMD64 manifest: \`${AMD64_DIGEST}\`"
+            echo "- ARM64 manifest: \`${ARM64_DIGEST}\`"
+          } >>"${GITHUB_STEP_SUMMARY}"
