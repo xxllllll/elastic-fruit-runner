@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	defaultDockerHostRunnerImage = "elastic-fruit-runner/docker-host-runner:2.332.0"
+	defaultDockerHostRunnerImage = "ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner@sha256:24d7af1adc02c8c5d21306752d3d31df1d693eeea0c9c59be4c3f481dc9911a8"
 	managedLabel                 = "io.github.boring-design.elastic-fruit-runner.managed"
 	runnerSetLabel               = "io.github.boring-design.elastic-fruit-runner.runner-set"
 	runnerNameLabel              = "io.github.boring-design.elastic-fruit-runner.runner-name"
