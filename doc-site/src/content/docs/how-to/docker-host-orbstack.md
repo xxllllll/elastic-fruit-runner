@@ -25,7 +25,30 @@ docker info --format '{{.Architecture}}'
 `DOCKER_HOST=unix:///absolute/path/to/docker.sock` is also supported. TCP and
 SSH endpoints are rejected in this phase.
 
-## Build the runner image
+## Resolve the published runner image
+
+The Fork publishes a public multi-platform OCI Index. Resolve its version tag
+to an immutable digest before configuring a production runner:
+
+```sh
+images/docker-host-runner/resolve-release.sh 2.332.0-r1
+```
+
+The command requires Docker Buildx and jq. It accepts no implicit `latest`
+version and verifies that the index contains exactly `linux/amd64` and
+`linux/arm64`. Use the printed `image=...@sha256:...` value in configuration.
+
+Verify both remote architectures with:
+
+```sh
+RUNNER_IMAGE="ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner"
+EFR_IMAGE_TEST_REFERENCE="${RUNNER_IMAGE}@sha256:<index-digest>" \
+  images/docker-host-runner/test.sh
+```
+
+## Build the image locally
+
+Use local architecture tags while changing the Dockerfile:
 
 ```sh
 docker build \
@@ -44,7 +67,7 @@ initializer `1.29.0`, and Docker Compose `2.40.3`. It includes GCC, G++, Make,
 CMake, pkg-config, Docker CLI, and Buildx. It removes Docker daemon executables
 and contains no repository credentials or project-specific Rust toolchain.
 
-Verify both image architectures locally with:
+Verify both locally built architectures with:
 
 ```sh
 images/docker-host-runner/test.sh
@@ -63,7 +86,7 @@ repos:
     runner_sets:
       - name: repo-orbstack-amd64
         backend: docker-host
-        image: elastic-fruit-runner/docker-host-runner:2.332.0-amd64
+        image: ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner@sha256:<verified-index-digest>
         labels: [self-hosted, linux, amd64]
         max_runners: 1
         platform: linux/amd64
@@ -72,10 +95,16 @@ repos:
 idle_timeout: 15m
 ```
 
-For a native Apple Silicon runner, use the `2.332.0-arm64` image, set
-`platform: linux/arm64`, replace the `amd64` label with `arm64`, and use a
-distinct Runner Set name such as `repo-orbstack-arm64`. Only one
-`docker-host` Runner Set can be configured at a time.
+For a native Apple Silicon runner, keep the same multi-platform index digest,
+set `platform: linux/arm64`, replace the `amd64` label with `arm64`, and use a
+distinct Runner Set name such as `repo-orbstack-arm64`. Only one `docker-host`
+Runner Set can be configured at a time.
+
+When publishing an update, use a new `<runner-version>-r<revision>` tag, resolve
+its new digest, preserve the current configuration as a rollback point, and
+replace only the `image` value. Restart the Controller and complete a real JIT
+smoke before removing the backup. Never point a production Runner Set at
+`latest` or at a version tag without its digest.
 
 Keep the real PAT or GitHub App private key outside the repository. Do not put
 JIT configuration, runner tokens, or credentials under `cache_root`.

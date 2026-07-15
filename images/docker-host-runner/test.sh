@@ -6,6 +6,7 @@ resource_suffix="${EFR_IMAGE_TEST_SUFFIX:-$(date +%s)-$$}"
 compose_version="$(sed -n 's/^ARG DOCKER_COMPOSE_VERSION=//p' "$image_dir/Dockerfile")"
 gh_version="$(sed -n 's/^ARG GH_VERSION=//p' "$image_dir/Dockerfile")"
 rustup_version="$(sed -n 's/^ARG RUSTUP_VERSION=//p' "$image_dir/Dockerfile")"
+remote_image="${EFR_IMAGE_TEST_REFERENCE:-}"
 declare -a test_images=()
 declare -a test_directories=()
 
@@ -90,10 +91,16 @@ verify_rustup_persistence() {
 
 test_platform() {
   local platform="$1" arch_name="$2" expected_arch="$3"
-  local image="elastic-fruit-runner/docker-host-runner:test-${arch_name}-${resource_suffix}"
+  local image
 
-  test_images+=("$image")
-  docker build --platform "$platform" -t "$image" "$image_dir"
+  if [[ -n "$remote_image" ]]; then
+    image="$remote_image"
+    docker pull --platform "$platform" "$image"
+  else
+    image="elastic-fruit-runner/docker-host-runner:test-${arch_name}-${resource_suffix}"
+    test_images+=("$image")
+    docker build --platform "$platform" -t "$image" "$image_dir"
+  fi
   verify_image_contract "$image" "$platform" "$expected_arch"
   verify_rustup_persistence "$image" "$platform" "$arch_name"
   printf 'Verified docker-host runner image for %s\n' "$platform"
