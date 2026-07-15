@@ -61,7 +61,8 @@ release with:
 
 ```sh
 RUNNER_IMAGE="ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner"
-EFR_IMAGE_TEST_REFERENCE="${RUNNER_IMAGE}@sha256:<index-digest>" \
+EFR_IMAGE_TEST_AMD64_REFERENCE="${RUNNER_IMAGE}@sha256:<amd64-digest>" \
+EFR_IMAGE_TEST_ARM64_REFERENCE="${RUNNER_IMAGE}@sha256:<arm64-digest>" \
   images/docker-host-runner/test.sh
 ```
 
