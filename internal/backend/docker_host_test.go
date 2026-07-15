@@ -11,6 +11,14 @@ import (
 	"testing"
 )
 
+func TestDefaultDockerHostRunnerImageUsesPublishedDigest(t *testing.T) {
+	t.Parallel()
+	const want = "ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner@sha256:24d7af1adc02c8c5d21306752d3d31df1d693eeea0c9c59be4c3f481dc9911a8"
+	if defaultDockerHostRunnerImage != want {
+		t.Fatalf("defaultDockerHostRunnerImage = %q, want %q", defaultDockerHostRunnerImage, want)
+	}
+}
+
 func TestDockerHostRunArguments(t *testing.T) {
 	t.Parallel()
 	fake := &fakeDockerCommandRunner{results: successfulRunResults()}
