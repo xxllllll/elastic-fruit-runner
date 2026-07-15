@@ -33,9 +33,6 @@ type Server struct {
 
 // NewServer creates an API server backed by the management and vitals services.
 func NewServer(managementService *management.Service, vitalsService *vitals.Service, idleTimeout time.Duration, cors config.CORSConfig) *Server {
-	if cors.AllowOrigin == "" {
-		cors.AllowOrigin = "*"
-	}
 	if cors.AllowMethods == "" {
 		cors.AllowMethods = "GET, POST, OPTIONS"
 	}
@@ -187,6 +184,8 @@ func toProtoBackend(b string) controlplanev1.Backend {
 		return controlplanev1.Backend_BACKEND_TART
 	case "docker":
 		return controlplanev1.Backend_BACKEND_DOCKER
+	case "docker-host":
+		return controlplanev1.Backend_BACKEND_DOCKER_HOST
 	default:
 		return controlplanev1.Backend_BACKEND_UNSPECIFIED
 	}
@@ -210,7 +209,9 @@ func toProtoJobResult(r string) controlplanev1.JobResult {
 // withCORS wraps a handler with CORS headers based on the provided configuration.
 func withCORS(h http.Handler, cors config.CORSConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", cors.AllowOrigin)
+		if cors.AllowOrigin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", cors.AllowOrigin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", cors.AllowMethods)
 		w.Header().Set("Access-Control-Allow-Headers", cors.AllowHeaders)
 		w.Header().Set("Access-Control-Expose-Headers", cors.ExposeHeaders)

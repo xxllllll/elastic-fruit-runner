@@ -51,7 +51,9 @@ echo "connect: no route to host" >&2
 exit 255
 `)
 	resetBinpath(t, dir)
-	restore := setSSHReadyTimings(15*time.Millisecond, time.Millisecond, time.Millisecond, 10*time.Millisecond)
+	// Keep the overall retry window short, but allow enough time for macOS to
+	// start the fake shell and capture its stderr before CommandContext kills it.
+	restore := setSSHReadyTimings(25*time.Millisecond, time.Millisecond, time.Millisecond, 250*time.Millisecond)
 	t.Cleanup(restore)
 
 	m := NewManager()

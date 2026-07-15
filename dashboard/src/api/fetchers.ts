@@ -23,6 +23,7 @@ const RUNNER_STATE_MAP: Record<string, Runner['state']> = {
 const BACKEND_MAP: Record<string, RunnerSet['backend']> = {
   BACKEND_TART: 'tart',
   BACKEND_DOCKER: 'docker',
+  BACKEND_DOCKER_HOST: 'docker-host',
 }
 
 const JOB_RESULT_MAP: Record<string, JobRecord['result']> = {

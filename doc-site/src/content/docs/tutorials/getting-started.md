@@ -33,13 +33,13 @@ elastic-fruit-runner --help
 mkdir -p ~/.elastic-fruit-runner
 ```
 
-Create `~/.elastic-fruit-runner/config.yaml` with the following content. Replace `your-org` with your GitHub organization name and `ghp_xxx` with your PAT:
+Create `~/.elastic-fruit-runner/config.yaml` with the following content. Replace `your-org` with your GitHub organization name and `github_pat_xxx` with your fine-grained PAT:
 
 ```yaml
 orgs:
   - org: your-org
     auth:
-      pat_token: ghp_xxx
+      pat_token: github_pat_xxx
     runner_group: Default
     runner_sets:
       # macOS runners via Tart VMs (Apple Silicon only)

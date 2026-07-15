@@ -4,6 +4,7 @@ Elastic GitHub Actions self-hosted runner manager for Apple Silicon.
 
 - **Tart mode** — ephemeral macOS VMs via [Tart](https://tart.run), one per job, auto-scaled
 - **Linux arm64 / amd64** via Docker (Docker-in-Docker)
+- **Linux amd64 on OrbStack** via a host Docker socket, without privileged DinD
 - Powered by the official [GitHub Runner Scale Set Client](https://github.com/actions/scaleset) (Go)
 
 > **Status:** PoC — core flow works, not production-hardened yet.
@@ -39,6 +40,32 @@ make test
 # Quick local check before committing (format, vet, build)
 make check
 ```
+
+## OrbStack Docker host runner MVP
+
+The `docker-host` backend runs an ephemeral JIT runner container against the
+active Docker CLI context. It does not use `--privileged` or start a Docker
+daemon inside the runner.
+
+Build a pinned runner image for the required architecture:
+
+```sh
+docker build \
+  --platform linux/amd64 \
+  -t elastic-fruit-runner/docker-host-runner:2.332.0-amd64 \
+  images/docker-host-runner
+
+docker build \
+  --platform linux/arm64 \
+  -t elastic-fruit-runner/docker-host-runner:2.332.0-arm64 \
+  images/docker-host-runner
+```
+
+The first phase supports one repository-level runner set with
+`max_runners: 1` and either `platform: linux/amd64` or
+`platform: linux/arm64`. See the
+[OrbStack guide](https://elastic-fruit-runner.pages.dev/how-to/docker-host-orbstack/)
+and `config.example.yaml` for configuration and cache layout.
 
 ---
 

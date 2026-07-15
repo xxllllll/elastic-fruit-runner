@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const DefaultAPIAddr = "127.0.0.1:8080"
+
 // Config holds all runtime configuration for the daemon.
 type Config struct {
 	Orgs        []OrgConfig   `yaml:"orgs"`
@@ -16,6 +18,7 @@ type Config struct {
 	APIAddr     string        `yaml:"api_addr"`
 	CORS        CORSConfig    `yaml:"cors"`
 	DBPath      string        `yaml:"db_path"`
+	CacheRoot   string        `yaml:"cache_root"`
 }
 
 // CORSConfig holds Cross-Origin Resource Sharing settings.
@@ -103,12 +106,13 @@ type GitHubAppConfig struct {
 
 // RunnerSetConfig describes a single runner scale set.
 type RunnerSetConfig struct {
-	Name       string   `yaml:"name"`
-	Backend    string   `yaml:"backend"`
-	Image      string   `yaml:"image"`
-	Labels     []string `yaml:"labels"`
-	MaxRunners int      `yaml:"max_runners"`
-	Platform   string   `yaml:"platform"`
+	Name           string   `yaml:"name"`
+	Backend        string   `yaml:"backend"`
+	Image          string   `yaml:"image"`
+	Labels         []string `yaml:"labels"`
+	MaxRunners     int      `yaml:"max_runners"`
+	Platform       string   `yaml:"platform"`
+	CacheNamespace string   `yaml:"cache_namespace"`
 }
 
 // Validate returns an error if the configuration is invalid.
@@ -132,24 +136,42 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("cors: allow_credentials requires a specific allow_origin, wildcard \"*\" is not valid per the CORS spec")
 	}
 
-	runnerSetNames := make(map[string]struct{})
+	state := &configValidationState{
+		runnerSetNames: make(map[string]struct{}),
+		cacheRoot:      c.CacheRoot,
+	}
 
 	for i := range c.Orgs {
-		if err := validateOrg(&c.Orgs[i], i, runnerSetNames); err != nil {
+		if err := validateOrg(&c.Orgs[i], i, state); err != nil {
 			return err
 		}
 	}
 
 	for i := range c.Repos {
-		if err := validateRepo(&c.Repos[i], i, runnerSetNames); err != nil {
+		if err := validateRepo(&c.Repos[i], i, state); err != nil {
 			return err
 		}
+	}
+	if countDockerHostRunnerSets(c.Repos) > 1 {
+		return fmt.Errorf("docker-host first phase supports at most one repository runner set")
 	}
 
 	return nil
 }
 
-func validateOrg(org *OrgConfig, i int, runnerSetNames map[string]struct{}) error {
+type configValidationState struct {
+	runnerSetNames map[string]struct{}
+	cacheRoot      string
+}
+
+type runnerSetValidation struct {
+	prefix            string
+	seen              map[string]struct{}
+	cacheRoot         string
+	dockerHostAllowed bool
+}
+
+func validateOrg(org *OrgConfig, i int, state *configValidationState) error {
 	if org.Org == "" {
 		return fmt.Errorf("orgs[%d].org is required", i)
 	}
@@ -163,14 +185,19 @@ func validateOrg(org *OrgConfig, i int, runnerSetNames map[string]struct{}) erro
 		return fmt.Errorf("orgs[%d].runner_sets must have at least one entry", i)
 	}
 	for j := range org.RunnerSets {
-		if err := validateRunnerSet(&org.RunnerSets[j], fmt.Sprintf("orgs[%d].runner_sets[%d]", i, j), runnerSetNames); err != nil {
+		validation := runnerSetValidation{
+			prefix:    fmt.Sprintf("orgs[%d].runner_sets[%d]", i, j),
+			seen:      state.runnerSetNames,
+			cacheRoot: state.cacheRoot,
+		}
+		if err := validateRunnerSet(&org.RunnerSets[j], validation); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateRepo(repo *RepoConfig, i int, runnerSetNames map[string]struct{}) error {
+func validateRepo(repo *RepoConfig, i int, state *configValidationState) error {
 	if repo.Repo == "" {
 		return fmt.Errorf("repos[%d].repo is required", i)
 	}
@@ -185,7 +212,13 @@ func validateRepo(repo *RepoConfig, i int, runnerSetNames map[string]struct{}) e
 		return fmt.Errorf("repos[%d].runner_sets must have at least one entry", i)
 	}
 	for j := range repo.RunnerSets {
-		if err := validateRunnerSet(&repo.RunnerSets[j], fmt.Sprintf("repos[%d].runner_sets[%d]", i, j), runnerSetNames); err != nil {
+		validation := runnerSetValidation{
+			prefix:            fmt.Sprintf("repos[%d].runner_sets[%d]", i, j),
+			seen:              state.runnerSetNames,
+			cacheRoot:         state.cacheRoot,
+			dockerHostAllowed: true,
+		}
+		if err := validateRunnerSet(&repo.RunnerSets[j], validation); err != nil {
 			return err
 		}
 	}
@@ -223,24 +256,28 @@ func validateAuth(auth *AuthConfig, prefix string) error {
 	return nil
 }
 
-func validateRunnerSet(rs *RunnerSetConfig, prefix string, seen map[string]struct{}) error {
+func validateRunnerSet(rs *RunnerSetConfig, validation runnerSetValidation) error {
+	prefix := validation.prefix
 	if rs.Name == "" {
 		return fmt.Errorf("%s.name is required", prefix)
 	}
-	if _, exists := seen[rs.Name]; exists {
+	if _, exists := validation.seen[rs.Name]; exists {
 		return fmt.Errorf("runner set name %q is not unique", rs.Name)
 	}
-	seen[rs.Name] = struct{}{}
+	validation.seen[rs.Name] = struct{}{}
 
 	if rs.Backend == "" {
 		return fmt.Errorf("%s.backend is required", prefix)
 	}
-	if rs.Backend != "tart" && rs.Backend != "docker" {
-		return fmt.Errorf("%s.backend must be 'tart' or 'docker', got %q", prefix, rs.Backend)
+	if rs.Backend != "tart" && rs.Backend != "docker" && rs.Backend != "docker-host" {
+		return fmt.Errorf("%s.backend must be 'tart', 'docker', or 'docker-host', got %q", prefix, rs.Backend)
 	}
 	if rs.MaxRunners <= 0 {
 		return fmt.Errorf("%s.max_runners must be > 0", prefix)
 	}
 
-	return nil
+	if rs.Backend != "docker-host" {
+		return nil
+	}
+	return validateDockerHostRunnerSet(rs, validation)
 }

@@ -13,7 +13,7 @@ Create a `config.yaml` (see [configuration reference](/reference/configuration/)
 orgs:
   - org: your-org
     auth:
-      pat_token: ghp_xxx
+      pat_token: github_pat_xxx
     runner_group: Default
     runner_sets:
       # Linux arm64 runners

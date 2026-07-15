@@ -29,6 +29,7 @@ const (
 	Backend_BACKEND_UNSPECIFIED Backend = 0
 	Backend_BACKEND_TART        Backend = 1
 	Backend_BACKEND_DOCKER      Backend = 2
+	Backend_BACKEND_DOCKER_HOST Backend = 3
 )
 
 // Enum value maps for Backend.
@@ -37,11 +38,13 @@ var (
 		0: "BACKEND_UNSPECIFIED",
 		1: "BACKEND_TART",
 		2: "BACKEND_DOCKER",
+		3: "BACKEND_DOCKER_HOST",
 	}
 	Backend_value = map[string]int32{
 		"BACKEND_UNSPECIFIED": 0,
 		"BACKEND_TART":        1,
 		"BACKEND_DOCKER":      2,
+		"BACKEND_DOCKER_HOST": 3,
 	}
 )
 
@@ -1073,11 +1076,12 @@ const file_controlplane_v1_controlplane_proto_rawDesc = "" +
 	"\x11cpu_usage_percent\x18\x01 \x01(\x02R\x0fcpuUsagePercent\x120\n" +
 	"\x14memory_usage_percent\x18\x02 \x01(\x02R\x12memoryUsagePercent\x12,\n" +
 	"\x12disk_usage_percent\x18\x03 \x01(\x02R\x10diskUsagePercent\x12/\n" +
-	"\x13temperature_celsius\x18\x04 \x01(\x02R\x12temperatureCelsius*H\n" +
+	"\x13temperature_celsius\x18\x04 \x01(\x02R\x12temperatureCelsius*a\n" +
 	"\aBackend\x12\x17\n" +
 	"\x13BACKEND_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fBACKEND_TART\x10\x01\x12\x12\n" +
-	"\x0eBACKEND_DOCKER\x10\x02*u\n" +
+	"\x0eBACKEND_DOCKER\x10\x02\x12\x17\n" +
+	"\x13BACKEND_DOCKER_HOST\x10\x03*u\n" +
 	"\vRunnerState\x12\x1c\n" +
 	"\x18RUNNER_STATE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16RUNNER_STATE_PREPARING\x10\x01\x12\x15\n" +
