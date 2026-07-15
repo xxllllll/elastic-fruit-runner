@@ -13,6 +13,8 @@ The dashboard provides a real-time view of runner state, system health, and job 
 - **System Vitals** — live-fluctuating CPU, memory, disk, and temperature readings
 - **Connection Status** — GitHub org/repo target, auth mode, and last job timestamp
 - **Recent Jobs** — scrollable history of completed and running jobs with result and duration
+- **Internationalization** — English and Simplified Chinese with browser-language detection and a persistent switcher
+- **Themes** — dark and light modes that follow the system preference until the user makes a persistent choice
 - **Responsive** — adapts from desktop (3-column) to tablet (2-column) to mobile (single-column)
 
 ## Tech Stack

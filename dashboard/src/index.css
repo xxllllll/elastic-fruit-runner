@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./theme.css";
 
 
 * {
@@ -7,23 +8,11 @@
   padding: 0;
 }
 
-:root {
-  --bg: #080808;
-  --border: #242424;
-  --border-bright: #383838;
-  --text: #f0f0f0;
-  --text-dim: #888888;
-  --text-muted: #444444;
-  --accent: #ffffff;
-  --danger: #ff3b30;
-  --warn: #ff9500;
-}
-
 html, body, #root {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Geist Mono Variable', 'Geist Mono', monospace;
+  font-family: 'Geist Mono Variable', 'Geist Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -58,8 +47,28 @@ html, body, #root {
 }
 
 .cell {
-  background: var(--bg);
+  background: var(--surface);
   padding: 20px 22px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.header-actions,
+.preference-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* Tablet: ≤ 900px */
@@ -95,6 +104,14 @@ html, body, #root {
 
 /* Mobile: ≤ 600px */
 @media (max-width: 600px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .header-actions {
+    justify-content: flex-start;
+  }
   .app-container {
     padding: 14px 14px;
   }

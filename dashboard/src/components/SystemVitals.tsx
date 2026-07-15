@@ -1,8 +1,10 @@
 import type { MachineVitals } from '../types'
+import type { TranslationKey } from '../i18n'
+import { useI18n } from '../hooks/useI18n'
 
 interface VitalConfig {
   key: string
-  persona: string
+  label: TranslationKey
   unit: string
   max: number
   warn: number
@@ -10,10 +12,10 @@ interface VitalConfig {
 }
 
 const VITAL_CONFIGS: VitalConfig[] = [
-  { key: 'cpu',  persona: 'PROCESSOR LOAD',   unit: '%',   max: 100, warn: 70, crit: 90 },
-  { key: 'mem',  persona: 'MEMORY BANKS',     unit: '%',   max: 100, warn: 80, crit: 95 },
-  { key: 'disk', persona: 'STORAGE ARRAY',    unit: '%',   max: 100, warn: 85, crit: 95 },
-  { key: 'temp', persona: 'CORE TEMPERATURE', unit: '°C',  max: 100, warn: 70, crit: 85 },
+  { key: 'cpu',  label: 'vitals.processor',   unit: '%',   max: 100, warn: 70, crit: 90 },
+  { key: 'mem',  label: 'vitals.memory',      unit: '%',   max: 100, warn: 80, crit: 95 },
+  { key: 'disk', label: 'vitals.storage',     unit: '%',   max: 100, warn: 85, crit: 95 },
+  { key: 'temp', label: 'vitals.temperature', unit: '°C',  max: 100, warn: 70, crit: 85 },
 ]
 
 function getValue(vitals: MachineVitals, key: string): number {
@@ -27,30 +29,31 @@ function getValue(vitals: MachineVitals, key: string): number {
 }
 
 function VitalBar({ config, value }: { config: VitalConfig; value: number }) {
+  const { t } = useI18n()
   const rounded = Math.round(value)
   const pct = Math.min(100, Math.max(0, (value / config.max) * 100))
 
   const color =
-    rounded >= config.crit ? '#ff3b30' :
-    rounded >= config.warn ? '#ff9500' :
-    '#888888'
+    rounded >= config.crit ? 'var(--danger)' :
+    rounded >= config.warn ? 'var(--warn)' :
+    'var(--text-secondary)'
 
   const barColor =
-    rounded >= config.crit ? '#ff3b30' :
-    rounded >= config.warn ? '#ff9500' :
-    '#e8e8e8'
+    rounded >= config.crit ? 'var(--danger)' :
+    rounded >= config.warn ? 'var(--warn)' :
+    'var(--accent-soft)'
 
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-        <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase' }}>
-          {config.persona}
+        <span style={{ fontSize: 9, letterSpacing: '0.15em', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+          {t(config.label)}
         </span>
         <span style={{ fontSize: 13, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>
           {rounded}{config.unit}
         </span>
       </div>
-      <div style={{ height: 4, background: '#1a1a1a', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ height: 4, background: 'var(--track)', position: 'relative', overflow: 'hidden' }}>
         <div
           style={{
             height: '100%',
@@ -62,7 +65,7 @@ function VitalBar({ config, value }: { config: VitalConfig; value: number }) {
         >
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(0,0,0,0.4) 3px, rgba(0,0,0,0.4) 4px)',
+            background: 'repeating-linear-gradient(90deg, transparent 0px, transparent 3px, var(--stripe) 3px, var(--stripe) 4px)',
           }} />
         </div>
       </div>
@@ -71,10 +74,12 @@ function VitalBar({ config, value }: { config: VitalConfig; value: number }) {
 }
 
 export function SystemVitals({ vitals }: { vitals: MachineVitals | null }) {
+  const { t } = useI18n()
+
   if (!vitals) {
     return (
-      <div style={{ fontSize: 10, color: '#444', letterSpacing: '0.1em' }}>
-        LOADING...
+      <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+        {t('common.loading')}
       </div>
     )
   }

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import type { PetMood } from './petMood'
+import { useUiPreferences, type Theme } from '../store/useUiPreferences'
 
 // ─── Pixel frame definitions (16×16) ─────────────────────────────────────────
 // 0 = transparent  1 = body  2 = eye/bright  3 = mouth  4 = dim/shadow
@@ -130,11 +131,19 @@ const FRAME_ALERT: Frame = [
 ]
 
 // ─── Color palette per mood ────────────────────────────────────────────────────
-const PALETTE: Record<PetMood, Record<number, string>> = {
-  idle:     { 1: '#b0b0b0', 2: '#ffffff', 3: '#ffffff', 4: '#555' },
-  busy:     { 1: '#c8c8c8', 2: '#ffffff', 3: '#ffffff', 4: '#666' },
-  sleeping: { 1: '#707070', 2: '#888888', 3: '#888888', 4: '#444' },
-  alert:    { 1: '#d0d0d0', 2: '#ffffff', 3: '#ffffff', 4: '#555' },
+const PALETTES: Record<Theme, Record<PetMood, Record<number, string>>> = {
+  dark: {
+    idle:     { 1: '#b0b0b0', 2: '#ffffff', 3: '#ffffff', 4: '#555555' },
+    busy:     { 1: '#c8c8c8', 2: '#ffffff', 3: '#ffffff', 4: '#666666' },
+    sleeping: { 1: '#707070', 2: '#888888', 3: '#888888', 4: '#444444' },
+    alert:    { 1: '#d0d0d0', 2: '#ffffff', 3: '#ffffff', 4: '#555555' },
+  },
+  light: {
+    idle:     { 1: '#454545', 2: '#101010', 3: '#101010', 4: '#8a8a8a' },
+    busy:     { 1: '#303030', 2: '#080808', 3: '#080808', 4: '#747474' },
+    sleeping: { 1: '#7a7a7a', 2: '#555555', 3: '#555555', 4: '#aaaaaa' },
+    alert:    { 1: '#252525', 2: '#000000', 3: '#000000', 4: '#777777' },
+  },
 }
 
 // ─── Animation sequences ───────────────────────────────────────────────────────
@@ -191,6 +200,7 @@ interface PixelPetProps {
 }
 
 export function PixelPet({ mood }: PixelPetProps) {
+  const theme = useUiPreferences(state => state.theme)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [seqIdx, setSeqIdx] = useState(0)
   const [prevMood, setPrevMood] = useState(mood)
@@ -217,8 +227,8 @@ export function PixelPet({ mood }: PixelPetProps) {
     if (!ctx) return
     ctx.imageSmoothingEnabled = false
     const seq = SEQUENCES[mood]
-    drawFrame(ctx, seq[seqIdx % seq.length].frame, PALETTE[mood])
-  }, [mood, seqIdx])
+    drawFrame(ctx, seq[seqIdx % seq.length].frame, PALETTES[theme][mood])
+  }, [mood, seqIdx, theme])
 
   return (
     <canvas
@@ -229,4 +239,3 @@ export function PixelPet({ mood }: PixelPetProps) {
     />
   )
 }
-

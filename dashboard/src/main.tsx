@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/geist-mono'
 import './index.css'
 import App from './App.tsx'
+import { initializeUiPreferences } from './store/useUiPreferences'
+
+initializeUiPreferences()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

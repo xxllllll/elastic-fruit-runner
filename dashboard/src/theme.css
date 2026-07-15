@@ -1,0 +1,74 @@
+:root {
+  --bg: #080808;
+  --surface: #080808;
+  --border: #242424;
+  --border-subtle: #1e1e1e;
+  --border-bright: #383838;
+  --text: #f0f0f0;
+  --text-secondary: #888888;
+  --text-tertiary: #555555;
+  --text-muted: #444444;
+  --text-faint: #333333;
+  --text-dim: #888888;
+  --accent: #ffffff;
+  --accent-soft: #e8e8e8;
+  --track: #1a1a1a;
+  --runner-name: #bbbbbb;
+  --state-preparing: #aaaaaa;
+  --state-idle: #888888;
+  --state-unknown: #666666;
+  --danger: #ff3b30;
+  --warn: #ff9500;
+  --stripe: rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #f2f2ee;
+  --surface: #ffffff;
+  --border: #c9c9c2;
+  --border-subtle: #d9d9d2;
+  --border-bright: #9a9a92;
+  --text: #161616;
+  --text-secondary: #4c4c4c;
+  --text-tertiary: #5f5f5f;
+  --text-muted: #686868;
+  --text-faint: #686868;
+  --text-dim: #4c4c4c;
+  --accent: #151515;
+  --accent-soft: #2f2f2f;
+  --track: #deded8;
+  --runner-name: #303030;
+  --state-preparing: #4c4c4c;
+  --state-idle: #5a5a5a;
+  --state-unknown: #686868;
+  --danger: #b42318;
+  --warn: #925000;
+  --stripe: rgba(255, 255, 255, 0.45);
+  color-scheme: light;
+}
+
+.preference-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-bright);
+  background: var(--surface);
+  color: var(--text);
+  padding: 4px 7px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.preference-button:hover,
+.preference-button:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.preference-key {
+  color: var(--text-muted);
+}
