@@ -6,15 +6,21 @@ resource_suffix="${EFR_IMAGE_TEST_SUFFIX:-$(date +%s)-$$}"
 compose_version="$(sed -n 's/^ARG DOCKER_COMPOSE_VERSION=//p' "$image_dir/Dockerfile")"
 gh_version="$(sed -n 's/^ARG GH_VERSION=//p' "$image_dir/Dockerfile")"
 rustup_version="$(sed -n 's/^ARG RUSTUP_VERSION=//p' "$image_dir/Dockerfile")"
-remote_image="${EFR_IMAGE_TEST_REFERENCE:-}"
+remote_amd64_image="${EFR_IMAGE_TEST_AMD64_REFERENCE:-}"
+remote_arm64_image="${EFR_IMAGE_TEST_ARM64_REFERENCE:-}"
 declare -a test_images=()
 declare -a test_directories=()
 
 [[ -n "$compose_version" && -n "$gh_version" && -n "$rustup_version" ]]
+[[ ( -z "$remote_amd64_image" && -z "$remote_arm64_image" ) ||
+  ( -n "$remote_amd64_image" && -n "$remote_arm64_image" ) ]] || {
+  echo "both EFR_IMAGE_TEST_AMD64_REFERENCE and EFR_IMAGE_TEST_ARM64_REFERENCE are required" >&2
+  exit 1
+}
 
 cleanup() {
   local resource
-  set +e
+  set +eu
   for resource in "${test_directories[@]}"; do
     rm -rf "$resource"
   done
@@ -93,8 +99,12 @@ test_platform() {
   local platform="$1" arch_name="$2" expected_arch="$3"
   local image
 
-  if [[ -n "$remote_image" ]]; then
-    image="$remote_image"
+  if [[ -n "$remote_amd64_image" ]]; then
+    if [[ "$arch_name" == "amd64" ]]; then
+      image="$remote_amd64_image"
+    else
+      image="$remote_arm64_image"
+    fi
     docker pull --platform "$platform" "$image"
   else
     image="elastic-fruit-runner/docker-host-runner:test-${arch_name}-${resource_suffix}"

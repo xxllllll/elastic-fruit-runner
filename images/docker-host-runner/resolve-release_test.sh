@@ -65,6 +65,12 @@ grep -Fxq \
   'image=ghcr.io/example/project/docker-host-runner@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' \
   <<<"$output"
 grep -Fxq \
+  'amd64_image=ghcr.io/example/project/docker-host-runner@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
+  <<<"$output"
+grep -Fxq \
+  'arm64_image=ghcr.io/example/project/docker-host-runner@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' \
+  <<<"$output"
+grep -Fxq \
   'amd64_digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' \
   <<<"$output"
 grep -Fxq \

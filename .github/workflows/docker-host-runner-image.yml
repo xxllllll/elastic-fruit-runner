@@ -137,13 +137,17 @@ jobs:
           RUNNER_IMAGE_REPOSITORY="${REPOSITORY}" \
             images/docker-host-runner/resolve-release.sh "${VERSION_TAG}" | tee "${release_file}"
           image_ref=$(sed -n 's/^image=//p' "${release_file}")
+          amd64_image=$(sed -n 's/^amd64_image=//p' "${release_file}")
+          arm64_image=$(sed -n 's/^arm64_image=//p' "${release_file}")
           amd64_digest=$(sed -n 's/^amd64_digest=//p' "${release_file}")
           arm64_digest=$(sed -n 's/^arm64_digest=//p' "${release_file}")
           [[ "${image_ref}" == "${REPOSITORY}@${EXPECTED_DIGEST}" ]]
           sha_digest=$(docker buildx imagetools inspect "${SHA_REF}" \
             --format '{{json .Manifest}}' | jq -er '.digest')
           [[ "${sha_digest}" == "${EXPECTED_DIGEST}" ]]
-          EFR_IMAGE_TEST_REFERENCE="${image_ref}" images/docker-host-runner/test.sh
+          EFR_IMAGE_TEST_AMD64_REFERENCE="${amd64_image}" \
+            EFR_IMAGE_TEST_ARM64_REFERENCE="${arm64_image}" \
+            images/docker-host-runner/test.sh
           {
             echo "image_ref=${image_ref}"
             echo "amd64_digest=${amd64_digest}"

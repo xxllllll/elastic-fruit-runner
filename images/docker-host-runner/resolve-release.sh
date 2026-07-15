@@ -62,6 +62,8 @@ print_release() {
       fail "manifest contains an invalid digest: value=$digest"
   done
   printf 'image=%s@%s\n' "$repository" "$index_digest"
+  printf 'amd64_image=%s@%s\n' "$repository" "$amd64_digest"
+  printf 'arm64_image=%s@%s\n' "$repository" "$arm64_digest"
   printf 'amd64_digest=%s\n' "$amd64_digest"
   printf 'arm64_digest=%s\n' "$arm64_digest"
 }

@@ -38,7 +38,9 @@ The command verifies that the index contains exactly `linux/amd64` and
 digests:
 
 ```text
-image=ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner@sha256:<index-digest>
+image=<repository>@sha256:<index-digest>
+amd64_image=<repository>@sha256:<amd64-manifest-digest>
+arm64_image=<repository>@sha256:<arm64-manifest-digest>
 amd64_digest=sha256:<amd64-manifest-digest>
 arm64_digest=sha256:<arm64-manifest-digest>
 ```
@@ -54,7 +56,7 @@ platform. Tags are only discovery inputs for an intentional update.
    positive image revision.
 4. Check that the version and source tags resolve to the same index digest.
 5. Run `resolve-release.sh`, then test the returned digest with
-   `EFR_IMAGE_TEST_REFERENCE`.
+   `EFR_IMAGE_TEST_AMD64_REFERENCE` and `EFR_IMAGE_TEST_ARM64_REFERENCE`.
 6. Back up the host configuration, replace only its image digest, and restart
    the Controller.
 7. Run a real JIT smoke before treating the new digest as active.
@@ -100,7 +102,8 @@ The same contract can verify a published index digest without rebuilding it:
 
 ```sh
 RUNNER_IMAGE="ghcr.io/xxllllll/elastic-fruit-runner/docker-host-runner"
-EFR_IMAGE_TEST_REFERENCE="${RUNNER_IMAGE}@sha256:<index-digest>" \
+EFR_IMAGE_TEST_AMD64_REFERENCE="${RUNNER_IMAGE}@sha256:<amd64-digest>" \
+EFR_IMAGE_TEST_ARM64_REFERENCE="${RUNNER_IMAGE}@sha256:<arm64-digest>" \
   images/docker-host-runner/test.sh
 ```
 
