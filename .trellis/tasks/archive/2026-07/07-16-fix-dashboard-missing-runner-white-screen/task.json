@@ -1,0 +1,30 @@
+{
+  "id": "fix-dashboard-missing-runner-white-screen",
+  "name": "fix-dashboard-missing-runner-white-screen",
+  "title": "修复 Dashboard 历史任务白屏",
+  "description": "修复 completed-only 历史任务缺少 Runner 字段导致 Dashboard 初始化白屏",
+  "status": "completed",
+  "dev_type": "fix",
+  "scope": "dashboard",
+  "package": null,
+  "priority": "P2",
+  "creator": "xxllllll",
+  "assignee": "xxllllll",
+  "createdAt": "2026-07-16",
+  "completedAt": "2026-07-16",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "dashboard/src/api/fetchers.ts",
+    "dashboard/src/components/JobRow.tsx",
+    ".trellis/spec/frontend/api-boundary-guidelines.md"
+  ],
+  "notes": "",
+  "meta": {}
+}
