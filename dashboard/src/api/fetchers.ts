@@ -77,8 +77,8 @@ interface RunnerSetsResponse {
 interface JobRecordsResponse {
   jobRecords: Array<{
     id: string
-    runnerName: string
-    runnerSetName: string
+    runnerName?: string
+    runnerSetName?: string
     result: string
     startedAt: string
     completedAt?: string
@@ -155,8 +155,8 @@ export async function fetchRecentJobs(): Promise<JobRecord[]> {
   const data = await rpc<JobRecordsResponse>('ListJobRecords')
   return (data.jobRecords ?? []).map((j): JobRecord => ({
     id: j.id,
-    runnerName: j.runnerName,
-    runnerSetName: j.runnerSetName,
+    runnerName: j.runnerName ?? '',
+    runnerSetName: j.runnerSetName ?? '',
     result: JOB_RESULT_MAP[j.result] ?? (j.completedAt ? 'failure' : 'running'),
     startedAt: new Date(j.startedAt),
     completedAt: j.completedAt ? new Date(j.completedAt) : null,
