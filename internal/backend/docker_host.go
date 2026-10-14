@@ -121,6 +121,8 @@ func (b *DockerHostBackend) runArgs(input dockerRunInput) []string {
 		"--label", runnerSetLabel+"="+b.options.RunnerSet,
 		"--label", runnerNameLabel+"="+input.name,
 		"--env", "ACTIONS_RUNNER_INPUT_JITCONFIG",
+		"--env", "ACTIONS_RUNNER_TRACE_ALL_HTTP_EVENT=true",
+		"--env", "ACTIONS_RUNNER_DEBUG=true",
 		"--env", "CARGO_HOME=/home/runner/.cargo",
 		"--env", "RUSTUP_HOME=/home/runner/.rustup",
 		"--env", "CARGO_TARGET_DIR=/home/runner/.cache/efr/cargo-target",
@@ -140,6 +142,10 @@ func (b *DockerHostBackend) runArgs(input dockerRunInput) []string {
 }
 
 func (b *DockerHostBackend) Cleanup(ctx context.Context, name string) {
+	if strings.TrimSpace(name) == "" {
+		b.logger.Warn("refusing cleanup for empty runner name")
+		return
+	}
 	endpoint, err := b.resolver.resolve(ctx)
 	if err != nil {
 		b.logger.Warn("resolve Docker context for cleanup", "runner", name, "err", err)

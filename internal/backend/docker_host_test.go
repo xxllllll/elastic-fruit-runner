@@ -164,6 +164,17 @@ func TestDockerHostCleanupRemovesOnlyLabeledRunner(t *testing.T) {
 	assertContainsSequence(t, fake.calls[3].args, "rm", "-f", "-v", "container-id")
 }
 
+func TestDockerHostCleanupRefusesEmptyRunnerName(t *testing.T) {
+	t.Parallel()
+	fake := &fakeDockerCommandRunner{}
+	backend, _ := newTestDockerHostBackend(fake, "linux/amd64")
+	backend.Cleanup(context.Background(), "")
+	backend.Cleanup(context.Background(), "   ")
+	if len(fake.calls) != 0 {
+		t.Fatalf("Docker calls = %d, want 0 for empty runner name", len(fake.calls))
+	}
+}
+
 func TestDockerHostCleanupIsIdempotent(t *testing.T) {
 	t.Parallel()
 	fake := &fakeDockerCommandRunner{results: []fakeDockerResult{

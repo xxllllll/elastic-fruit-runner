@@ -89,8 +89,16 @@ func (d *ScaleSetController) HandleJobCompleted(ctx context.Context, job *scales
 	defer span.End()
 
 	name := job.RunnerName
-	d.runners.markDone(name)
 	d.jobRecorder.RecordJobCompleted(job.JobID, job.Result)
+	if name == "" {
+		d.logger.Info("job completed without assigned runner",
+			"job_id", job.JobID,
+			"result", job.Result,
+		)
+		return nil
+	}
+
+	d.runners.markDone(name)
 	d.logger.Info("job completed", "runner", name, "result", job.Result)
 
 	go func() {
